@@ -17,7 +17,9 @@ production-worthy infrastructure implementation.
 
 # Example - All-on-Cloud Option
 
-![placeholder architectural diagram](images/all-on-cloud.png)
+![All-on-Cloud architectural diagram](images/all-on-cloud.png)
+
+![All-on-Cloud architectural diagram - Example Components](images/all-on-cloud-with-letters.png)
 
 ## Costs
 
