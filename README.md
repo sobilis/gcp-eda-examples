@@ -51,7 +51,7 @@ for this project.
 
 You will also need to enable the Compute Engine (GCE) service for this account
 
-[Enable Example Services](https://console.cloud.google.com/flows/enableapi?apiid=compute.googleapis.com,cloudresourcemanager.googleapis.com)
+[Enable Example Services](https://console.cloud.google.com/flows/enableapi?apiid=compute.googleapis.com,file.googleapis.com,cloudresourcemanager.googleapis.com)
     
 Next, make sure the project you just created is selected in the top of the
 Cloud Console.
@@ -75,6 +75,7 @@ Get the source
 
     git clone <this_repo_url>
     cd gcp-eda-examples
+    git submodule update --init
 
 All example commands below are relative to this top-level directory of the
 examples repo.
@@ -103,12 +104,13 @@ dependencies can be installed using `provision.sh` during instance creation.
 Create two NFS volumes using Google Cloud Filestore.  One for `/home` (3TB) and
 one for `/tools` (3TB).
 
-    cd terraform/storage
+    cd ../storage
     terraform init
     terraform plan
     terraform apply
 
-Note the output IP addresses reported from the `apply`.
+Note the output IP addresses reported from the `apply` as you'll need them
+in the next step to configure the slurm cluster.
 
 
 ## Create a Slurm cluster
@@ -116,44 +118,31 @@ Note the output IP addresses reported from the `apply`.
 Create an example slurm cluster with a single `debug` partition that scales
 dynamically in GCP.
 
-Change to the slurm "basic" example directory
+Change to the slurm cluster example directory
 
-    cd terraform/slurm-gcp/tf/examples/basic
+    cd ../slurm-cluster
 
-Edit `basic.tfvars` to set the missing GCP project name (required) at the top
+Edit `basic.tfvars` to set some missing variables.
+Near the top, the project name (required) and the zone should match everywhere
 
-    cluster_name = "g1"
     project      = "<project>" # replace this with your GCP project name
-    zone         = "us-west1-b"
 
-and (optionally) add config for your NFS volumes by changing
-
-    # Optional network storage fields
-    # network_storage is mounted on all instances
-    # login_network_storage is mounted on controller and login instances
-    # network_storage = [{
-    #   server_ip     = "<storage host>"
-    #   remote_mount  = "/home"
-    #   local_mount   = "/home"
-    #   fs_type       = "nfs"
-    #   mount_options = null
-    # }]
-
-to read
+and then further down, fix the config for your NFS volumes by changing the
+`server_ip` entries to match the values for the volumes created above
 
     # Optional network storage fields
     # network_storage is mounted on all instances
     # login_network_storage is mounted on controller and login instances
     network_storage = [{
       server_ip     = "10.11.12.1" # from output of storage step above
-      remote_mount  = "/tools"
-      local_mount   = "/tools"
+      remote_mount  = "/home"
+      local_mount   = "/home"
       fs_type       = "nfs"
       mount_options = "defaults,hard,intr"
     },{
       server_ip     = "10.11.12.2" # from output of storage step above
-      remote_mount  = "/home"
-      local_mount   = "/home"
+      remote_mount  = "/tools"
+      local_mount   = "/tools"
       fs_type       = "nfs"
       mount_options = "defaults,hard,intr"
     }]
@@ -165,8 +154,8 @@ Next spin up the cluster.
 Still within the Slurm basic example directory above, run
 
     terraform init
-    terraform plan
-    terraform apply
+    terraform plan -var-file basic.tfvars
+    terraform apply -var-file basic.tfvars
 
 and wait for the resources to be created.
 
