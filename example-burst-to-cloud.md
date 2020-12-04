@@ -1,21 +1,8 @@
-# EDA Workloads on Google Cloud
+# Example - Burst-to-Cloud Option
 
-Here are examples of template snippets used to spin up Google Cloud resources
-for EDA workloads.
-
-Examples include:
-
-- [All on Cloud](#example---all-on-cloud-option)
-- [Burst to Cloud](example-burst-to-cloud.md)
-
-Please note that these are provided only as examples to help guide
-infrastructure planning and are not intended for use in production. They are
-deliberately simplified for clarity and lack significant details required for
-production-worthy infrastructure implementation.
-
----
-
-# Example - All-on-Cloud Option
+In this scenario, we mock up an on-permises slurm cluster and
+a GCP-based slurm cluster.  We then federate the two clusters
+to enable jobs submitted on A to execute on B.
 
 ![placeholder architectural diagram](images/all-on-cloud.png)
 
@@ -83,72 +70,22 @@ We use [Terraform](terraform.io) for these examples and the latest version is
 already installed in your GCP Cloudshell.
 
 
-## Create a license server
-
-Create an instance used to run a license manager in GCP.
-
-    cd terraform/licensing
-    terraform init
-    terraform plan
-    terraform apply
-
-This creates an example instance and shows how license manager binaries and
-dependencies can be installed using `provision.sh` during instance creation.
-
-
-## Create NFS volumes
-
-Create two NFS volumes using Google Cloud Filestore.  One for `/home` (3TB) and
-one for `/tools` (3TB).
-
-    cd ../storage
-    terraform init
-    terraform plan
-    terraform apply
-
-Note the output IP addresses reported from the `apply` as you'll need them
-in the next step to configure the slurm cluster.
-
-
-## Create a Slurm cluster
+## Create a mock "on-premises" Slurm cluster in GCP
 
 Create an example slurm cluster with a single `debug` partition that scales
 dynamically in GCP.
 
 Change to the slurm cluster example directory
 
-    cd ../slurm-cluster
+    cd on-prem-slurm-cluster
 
 Edit `basic.tfvars` to set some missing variables.
 Near the top, the project name (required) and the zone should match everywhere
 
     project      = "<project>" # replace this with your GCP project name
 
-and then further down, fix the config for your NFS volumes by changing the
-`server_ip` entries to match the values for the volumes created above
-
-    # Optional network storage fields
-    # network_storage is mounted on all instances
-    # login_network_storage is mounted on controller and login instances
-    network_storage = [{
-      server_ip     = "10.11.12.1" # from output of storage step above
-      remote_mount  = "/home"
-      local_mount   = "/home"
-      fs_type       = "nfs"
-      mount_options = "defaults,hard,intr"
-    },{
-      server_ip     = "10.11.12.2" # from output of storage step above
-      remote_mount  = "/tools"
-      local_mount   = "/tools"
-      fs_type       = "nfs"
-      mount_options = "defaults,hard,intr"
-    }]
-
-Note the IP addresses for the NFS volumes come from the output of the "storage"
-steps above.
-
-Next spin up the cluster.
-Still within the Slurm basic example directory above, run
+and then spin up the cluster.
+Still within the `on-prem-slurm-cluster` example directory above, run
 
     terraform init
     terraform plan -var-file basic.tfvars
@@ -174,15 +111,38 @@ process:
   is then ready to use.
 
 
+## Create the "burst" Slurm cluster in GCP
+
+Create another example slurm cluster with a single `debug` partition that scales
+dynamically in GCP.
+
+Change to the slurm cluster example directory
+
+    cd burst-slurm-cluster
+
+Edit `basic.tfvars` to set some missing variables.
+Near the top, the project name (required) and the zone should match everywhere
+
+    project      = "<project>" # replace this with your GCP project name
+
+and then spin up the cluster.
+Still within the `burst-slurm-cluster` example directory above, run
+
+    terraform init
+    terraform plan -var-file basic.tfvars
+    terraform apply -var-file basic.tfvars
+
+and wait for the resources to be created.
+
+Note again that creating a Slurm cluster using these example templates involves a two-step
+process (described above) and will take ~5mins.
+
+
 ## Run Slurm jobs
 
-Log into one of the Slurm login nodes
+Log into one of the Slurm login nodes for the "onprem" cluster:
 
-    gcloud compute ssh <cluster_name>-login0 --zone <zone>
-
-for example
-
-    gcloud compute ssh piton-login0 --zone us-central1-f
+    gcloud compute ssh onprem-login0 --zone <zone>
 
 which should show something like the following
 
@@ -227,7 +187,7 @@ which should show something like the following
     SSSSSSSSSSSS    SSS    SSSSSSSSSSSSS    SSSS        SSSS     SSSS     SSSS
 
 
-    [some_user_example_com@piton-login0 ~]$
+    [some_user_example_com@onprem-login0 ~]$
 
 
 At the prompt you can run various slurm commands.
@@ -264,7 +224,7 @@ You can set the time a compute node sits idle using `suspend_time` in the
 
 ## Run an EDA job
 
-From the login node, download an example design project from
+From the "onprem" login node, download an example design project from
 
     wget https://github.com/PrincetonUniversity/openpiton/archive/openpiton-19-10-23-r13.tar.gz
 
@@ -315,19 +275,14 @@ Caution: Deleting a project has the following effects:
 Alternatively, if you added the tutorial resources to an _existing_ project, you
 can still clean up those resources using Terraform.
 
-From the `slurm-cluster` sub-directory, run
+From the `burst-slurm-cluster` sub-directory, run
 
     terraform destroy -var-file basic.tfvars
 
-then
+then 
 
-    cd ../storage
-    terraform destroy
-
-and
-
-    cd ../licensing
-    terraform destroy
+    cd ../onprem-slurm-cluster
+    terraform destroy -var-file basic.tfvars
 
 
 ## What's next
