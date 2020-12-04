@@ -2,8 +2,8 @@ cluster_name = "onprem"
 project      = "<project>"
 zone         = "us-central1-f"
 
-network_name            = "default"
-subnetwork_name         = "default"
+#network_name            = "default"
+#subnetwork_name         = "default"
 # shared_vpc_host_project = "<vpc host project>"
 
 # disable_controller_public_ips = true
@@ -94,7 +94,8 @@ partitions = [
     gpu_type             = null
     network_storage      = []
     preemptible_bursting = true
-    vpc_subnet           = "default"
+    #vpc_subnet           = "default"
+    vpc_subnet           = null
   },
 #  { name                 = "partition2"
 #    machine_type         = "n1-standard-16"
