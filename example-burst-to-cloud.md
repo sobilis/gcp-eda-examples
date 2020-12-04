@@ -77,19 +77,19 @@ dynamically in GCP.
 
 Change to the slurm cluster example directory
 
-    cd on-prem-slurm-cluster
+    cd onprem-slurm-cluster
 
-Edit `basic.tfvars` to set some missing variables.
+Edit `onprem-cluster.tfvars` to set some missing variables.
 Near the top, the project name (required) and the zone should match everywhere
 
     project      = "<project>" # replace this with your GCP project name
 
 and then spin up the cluster.
-Still within the `on-prem-slurm-cluster` example directory above, run
+Still within the `onprem-slurm-cluster` example directory above, run
 
     terraform init
-    terraform plan -var-file basic.tfvars
-    terraform apply -var-file basic.tfvars
+    terraform plan -var-file onprem-cluster.tfvars
+    terraform apply -var-file onprem-cluster.tfvars
 
 and wait for the resources to be created.
 
@@ -120,7 +120,7 @@ Change to the slurm cluster example directory
 
     cd burst-slurm-cluster
 
-Edit `basic.tfvars` to set some missing variables.
+Edit `burst-cluster.tfvars` to set some missing variables.
 Near the top, the project name (required) and the zone should match everywhere
 
     project      = "<project>" # replace this with your GCP project name
@@ -129,8 +129,8 @@ and then spin up the cluster.
 Still within the `burst-slurm-cluster` example directory above, run
 
     terraform init
-    terraform plan -var-file basic.tfvars
-    terraform apply -var-file basic.tfvars
+    terraform plan -var-file burst-cluster.tfvars
+    terraform apply -var-file burst-cluster.tfvars
 
 and wait for the resources to be created.
 
@@ -219,7 +219,7 @@ Notice the first time you run any sort of job on Slurm it will take a little
 longer because it's dynamically spinning the resources (compute nodes) it needs
 in GCP.  Please also note that these resources spin back down when not in use.
 You can set the time a compute node sits idle using `suspend_time` in the
-`basic.tfvars` cluster config.
+`onprem-cluster.tfvars` (or `burst-cluster.tfvars`) cluster config.
 
 
 ## Run an EDA job
@@ -277,12 +277,12 @@ can still clean up those resources using Terraform.
 
 From the `burst-slurm-cluster` sub-directory, run
 
-    terraform destroy -var-file basic.tfvars
+    terraform destroy -var-file burst-cluster.tfvars
 
 then 
 
     cd ../onprem-slurm-cluster
-    terraform destroy -var-file basic.tfvars
+    terraform destroy -var-file onprem-cluster.tfvars
 
 
 ## What's next
